@@ -27,6 +27,7 @@ from .const import (
     SENSOR_TASKS,
 )
 from .coordinator import BudionCoordinatorData, BudionDataUpdateCoordinator
+from .members import ChildMember, tasks_summary
 
 MEAL_SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
     SENSOR_MEAL_BREAKFAST: SensorEntityDescription(
@@ -93,6 +94,16 @@ async def async_setup_entry(
                 )
             )
 
+    for child in coordinator.data.children:
+        if family.get("has_budcoins"):
+            entities.append(
+                BudionChildWalletSensor(coordinator, entry, family_name, child)
+            )
+        if family.get("has_shared_tasks"):
+            entities.append(
+                BudionChildTasksSensor(coordinator, entry, family_name, child)
+            )
+
     async_add_entities(entities)
 
 
@@ -143,6 +154,12 @@ class BudionMealSensor(BudionEntity):
         return self.coordinator.meal_title(entry)
 
     @property
+    def entity_picture(self) -> str | None:
+        """Return the meal image for entity cards."""
+        entry = self.coordinator.meals_for_today(self._api_meal_type)
+        return self.coordinator.meal_image_url(entry)
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return meal details."""
         entry = self.coordinator.meals_for_today(self._api_meal_type)
@@ -150,9 +167,10 @@ class BudionMealSensor(BudionEntity):
             return {
                 "date": dt_util.now().date().isoformat(),
                 "meal_type": self._api_meal_type,
+                "image_url": None,
             }
 
-        recipe = entry.get("recipe") or {}
+        recipe = self.coordinator.recipe_from_entry(entry)
         return {
             "date": entry.get("date"),
             "meal_type": entry.get("meal_type"),
@@ -160,6 +178,7 @@ class BudionMealSensor(BudionEntity):
             "title": entry.get("title"),
             "recipe_id": entry.get("recipe_id"),
             "recipe_title": recipe.get("title"),
+            "image_url": self.coordinator.meal_image_url(entry),
             "servings": entry.get("servings"),
             "notes": entry.get("notes"),
         }
@@ -371,3 +390,110 @@ class BudionShoppingListSensor(BudionEntity):
             if shopping_list.get("id") == self._list_id:
                 return shopping_list
         return None
+
+
+class BudionChildSensor(BudionEntity):
+    """Base sensor for an individual child."""
+
+    def __init__(
+        self,
+        coordinator: BudionDataUpdateCoordinator,
+        entry: ConfigEntry,
+        family_name: str,
+        child: ChildMember,
+    ) -> None:
+        super().__init__(coordinator, entry, family_name)
+        self._membership_id = child.membership_id
+        self._child_name = child.name
+        self._attr_translation_placeholders = {"child_name": child.name}
+
+    @property
+    def child(self) -> ChildMember | None:
+        """Return the latest child data."""
+        return self.coordinator.child_by_membership_id(self._membership_id)
+
+    @property
+    def entity_picture(self) -> str | None:
+        """Return the child's avatar."""
+        child = self.child
+        return child.avatar_url if child else None
+
+
+class BudionChildWalletSensor(BudionChildSensor):
+    """Sensor for a child's budcoin balance."""
+
+    _attr_icon = "mdi:star-circle-outline"
+    _attr_native_unit_of_measurement = "coins"
+    _attr_translation_key = "child_budcoins"
+
+    def __init__(
+        self,
+        coordinator: BudionDataUpdateCoordinator,
+        entry: ConfigEntry,
+        family_name: str,
+        child: ChildMember,
+    ) -> None:
+        super().__init__(coordinator, entry, family_name, child)
+        self._attr_unique_id = f"{entry.entry_id}_child_{child.membership_id}_budcoins"
+
+    @property
+    def native_value(self) -> int:
+        """Return the available budcoin balance."""
+        child = self.child
+        return child.wallet_balance if child else 0
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return wallet details."""
+        child = self.child
+        if not child:
+            return {}
+        return {
+            "membership_id": child.membership_id,
+            "name": child.name,
+            "role": child.role,
+            "role_label": child.role_label,
+            "reserved": child.wallet_reserved,
+            "total": child.wallet_total,
+        }
+
+
+class BudionChildTasksSensor(BudionChildSensor):
+    """Sensor for a child's tasks today."""
+
+    _attr_icon = "mdi:checkbox-marked-circle-outline"
+    _attr_translation_key = "child_tasks"
+
+    def __init__(
+        self,
+        coordinator: BudionDataUpdateCoordinator,
+        entry: ConfigEntry,
+        family_name: str,
+        child: ChildMember,
+    ) -> None:
+        super().__init__(coordinator, entry, family_name, child)
+        self._attr_unique_id = f"{entry.entry_id}_child_{child.membership_id}_tasks"
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of open tasks."""
+        child = self.child
+        return child.open_task_count if child else 0
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return task details."""
+        child = self.child
+        if not child:
+            return {"tasks": []}
+
+        tasks = tasks_summary(child.tasks)
+        return {
+            "membership_id": child.membership_id,
+            "name": child.name,
+            "role": child.role,
+            "role_label": child.role_label,
+            "total": len(tasks),
+            "completed": sum(1 for task in tasks if task.get("is_completed")),
+            "tasks": tasks,
+        }

@@ -69,6 +69,12 @@
       },
       "shopping_list": {
         "name": "{list_name}"
+      },
+      "child_budcoins": {
+        "name": "{child_name} · Budcoins"
+      },
+      "child_tasks": {
+        "name": "{child_name} · Taken"
       }
     }
   },

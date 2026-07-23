@@ -204,9 +204,15 @@ class BudionApiClient:
         family_id: int,
         *,
         include_overdue: bool = True,
+        membership_id: int | None = None,
     ) -> dict[str, Any]:
         """Return today's tasks for a family."""
-        params = {"include_overdue": "1"} if include_overdue else {}
+        params: dict[str, str] = {}
+        if include_overdue:
+            params["include_overdue"] = "1"
+        if membership_id is not None:
+            params["membership_id"] = str(membership_id)
+
         data = await self._request(
             "GET",
             f"families/{family_id}/tasks/today",
@@ -214,6 +220,13 @@ class BudionApiClient:
         )
         assert isinstance(data, dict)
         return data
+
+    async def get_wallets(self, family_id: int) -> list[dict[str, Any]]:
+        """Return budcoin wallets for wallet-eligible family members."""
+        data = await self._request("GET", f"families/{family_id}/rewards/wallets")
+        if isinstance(data, dict):
+            return data.get("data", [])
+        return data or []
 
     async def get_contacts(self, family_id: int) -> list[dict[str, Any]]:
         """Return contacts for a family."""

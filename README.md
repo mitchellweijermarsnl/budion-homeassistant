@@ -18,6 +18,7 @@ This integration connects to the Budion API and exposes useful sensors for your 
 | **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
 | **Boodschappenlijsten** | One sensor per shopping list with open item count |
 | **Gezin** | Family name and subscription feature flags |
+| **Per kind** | Budcoin-saldo + open taken (tiener, kind, jong kind) |
 
 All meal and task sensors include rich attributes for use in automations, templates, and custom cards.
 
@@ -66,6 +67,18 @@ entity: sensor.<family>_avondeten
 name: Vanavond eten we
 ```
 
+The sensor exposes `entity_picture` and an `image_url` attribute when the planned meal is linked to a recipe with a photo.
+
+For a larger photo with the title:
+
+```yaml
+type: picture-entity
+entity: sensor.<family>_avondeten
+name: Vanavond eten we
+show_state: true
+show_name: true
+```
+
 ### Open tasks
 
 ```yaml
@@ -85,6 +98,21 @@ name: Boodschappen
 ```
 
 The `open_items` attribute contains all unchecked items.
+
+### Child budcoins and tasks
+
+For each child (`teen`, `child`, `young_child`) with Premium features:
+
+```yaml
+type: horizontal-stack
+cards:
+  - type: entity
+    entity: sensor.<family>_sam_budcoins
+  - type: entity
+    entity: sensor.<family>_sam_taken
+```
+
+Each child sensor also exposes the profile photo as `entity_picture` when available.
 
 ## Branding
 

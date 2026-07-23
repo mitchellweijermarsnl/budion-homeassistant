@@ -19,6 +19,7 @@ from .birthdays import (
     upcoming_birthdays,
 )
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .members import ChildMember, build_children
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class BudionCoordinatorData:
     tasks: list[dict[str, Any]] = field(default_factory=list)
     birthday_people: list[BirthdayPerson] = field(default_factory=list)
     birthdays: list[BirthdayEntry] = field(default_factory=list)
+    children: list[ChildMember] = field(default_factory=list)
     fetched_at: datetime = field(default_factory=datetime.now)
 
 
@@ -68,8 +70,10 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         meal_plan: list[dict[str, Any]] = []
         shopping_lists: list[dict[str, Any]] = []
         tasks: list[dict[str, Any]] = []
+        wallets: list[dict[str, Any]] = []
         birthday_people: list[BirthdayPerson] = []
         birthdays: list[BirthdayEntry] = []
+        children: list[ChildMember] = []
 
         if family.get("has_meal_planning"):
             try:
@@ -101,6 +105,12 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             except BudionApiError as err:
                 _LOGGER.debug("Tasks unavailable: %s", err)
 
+        if family.get("has_budcoins"):
+            try:
+                wallets = await self.client.get_wallets(self.family_id)
+            except BudionApiError as err:
+                _LOGGER.debug("Wallets unavailable: %s", err)
+
         contacts: list[dict[str, Any]] = []
         members: list[dict[str, Any]] = []
 
@@ -117,6 +127,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
 
         birthday_people = collect_birthday_people(contacts, members)
         birthdays = upcoming_birthdays(birthday_people, today=today)
+        children = build_children(members, wallets, tasks)
 
         return BudionCoordinatorData(
             family=family,
@@ -125,6 +136,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             tasks=tasks,
             birthday_people=birthday_people,
             birthdays=birthdays,
+            children=children,
             fetched_at=datetime.now(),
         )
 
@@ -139,13 +151,35 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         """Return today's meal for a given meal type."""
         return self.meals_for_date(dt_util.now().date(), meal_type)
 
+    @staticmethod
+    def recipe_from_entry(entry: dict[str, Any]) -> dict[str, Any]:
+        """Return the recipe payload from a meal plan entry."""
+        recipe = entry.get("recipe") or {}
+        if isinstance(recipe, dict) and isinstance(recipe.get("data"), dict):
+            return recipe["data"]
+        return recipe if isinstance(recipe, dict) else {}
+
     def meal_title(self, entry: dict[str, Any] | None) -> str:
         """Return a display title for a meal entry."""
         if not entry:
             return "Geen planning"
         if entry.get("title"):
             return entry["title"]
-        recipe = entry.get("recipe") or {}
+        recipe = self.recipe_from_entry(entry)
         if recipe.get("title"):
             return recipe["title"]
         return "Gepland"
+
+    def meal_image_url(self, entry: dict[str, Any] | None) -> str | None:
+        """Return the recipe image URL for a meal entry."""
+        if not entry:
+            return None
+        image_url = self.recipe_from_entry(entry).get("image_url")
+        return image_url if image_url else None
+
+    def child_by_membership_id(self, membership_id: int) -> ChildMember | None:
+        """Return a child member by membership ID."""
+        for child in self.data.children:
+            if child.membership_id == membership_id:
+                return child
+        return None
