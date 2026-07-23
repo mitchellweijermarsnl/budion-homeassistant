@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="branding/icon.png" alt="Budion" width="128">
+</p>
+
 # Budion Home Assistant Integration
 
 Home Assistant custom integration for [Budion](https://budion.app) — your family dashboard for meal planning, shopping lists, tasks, and birthdays.
