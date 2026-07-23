@@ -13,7 +13,7 @@ from .api import BudionApiClient
 from .const import CONF_FAMILY_ID, CONF_FAMILY_NAME, DEFAULT_API_URL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import BudionDataUpdateCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

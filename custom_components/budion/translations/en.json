@@ -71,5 +71,10 @@
         "name": "{list_name}"
       }
     }
+  },
+  "calendar": {
+    "birthdays": {
+      "name": "Birthdays"
+    }
   }
 }

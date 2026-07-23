@@ -12,6 +12,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .birthdays import format_upcoming_summary, group_upcoming_by_date
 from .const import (
     CONF_FAMILY_NAME,
     DOMAIN,
@@ -220,29 +221,45 @@ class BudionBirthdaysSensor(BudionEntity):
 
     @property
     def native_value(self) -> str | None:
-        """Return the next upcoming birthday."""
-        birthdays = self.coordinator.data.birthdays
-        if not birthdays:
-            return None
-        next_birthday = birthdays[0]
-        if next_birthday.days_until == 0:
-            return next_birthday.name
-        return f"{next_birthday.name} ({next_birthday.days_until}d)"
+        """Return the next upcoming birthday date with all names."""
+        return format_upcoming_summary(self.coordinator.data.birthdays)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return birthday details."""
+        grouped = [
+            {
+                "date": next_date.isoformat(),
+                "days_until": (next_date - date.today()).days,
+                "names": [entry.name for entry in day_entries],
+                "birthdays": [
+                    {
+                        "name": entry.name,
+                        "birth_date": entry.birth_date.isoformat(),
+                        "age": entry.age,
+                        "source": entry.source,
+                    }
+                    for entry in day_entries
+                ],
+            }
+            for next_date, day_entries in group_upcoming_by_date(
+                self.coordinator.data.birthdays
+            )
+        ]
+
         return {
+            "upcoming": grouped,
             "birthdays": [
                 {
                     "name": item.name,
-                    "birth_date": item.birth_date,
+                    "birth_date": item.birth_date.isoformat(),
+                    "next_occurrence": item.next_occurrence.isoformat(),
                     "days_until": item.days_until,
                     "age": item.age,
                     "source": item.source,
                 }
                 for item in self.coordinator.data.birthdays
-            ]
+            ],
         }
 
 

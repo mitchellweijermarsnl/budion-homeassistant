@@ -11,20 +11,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import BudionApiClient, BudionApiError, BudionAuthError
+from .birthdays import (
+    BirthdayEntry,
+    BirthdayPerson,
+    collect_birthday_people,
+    upcoming_birthdays,
+)
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass
-class BirthdayEntry:
-    """An upcoming birthday."""
-
-    name: str
-    birth_date: str
-    days_until: int
-    age: int | None
-    source: str
 
 
 @dataclass
@@ -35,90 +30,9 @@ class BudionCoordinatorData:
     meal_plan: list[dict[str, Any]] = field(default_factory=list)
     shopping_lists: list[dict[str, Any]] = field(default_factory=list)
     tasks: list[dict[str, Any]] = field(default_factory=list)
+    birthday_people: list[BirthdayPerson] = field(default_factory=list)
     birthdays: list[BirthdayEntry] = field(default_factory=list)
     fetched_at: datetime = field(default_factory=datetime.now)
-
-
-def _parse_date(value: str | None) -> date | None:
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
-def _next_birthday(birth: date, *, year_known: bool, today: date) -> tuple[date, int | None]:
-    """Return the next birthday date and age if year is known."""
-    try:
-        candidate = birth.replace(year=today.year)
-    except ValueError:
-        candidate = date(today.year, 2, 28)
-
-    if candidate < today:
-        try:
-            candidate = birth.replace(year=today.year + 1)
-        except ValueError:
-            candidate = date(today.year + 1, 2, 28)
-
-    age = None
-    if year_known:
-        age = candidate.year - birth.year
-
-    return candidate, age
-
-
-def _collect_birthdays(
-    contacts: list[dict[str, Any]],
-    members: list[dict[str, Any]],
-    *,
-    today: date,
-    horizon_days: int = 60,
-) -> list[BirthdayEntry]:
-    """Collect upcoming birthdays from contacts and family members."""
-    entries: list[BirthdayEntry] = []
-
-    for contact in contacts:
-        birth = _parse_date(contact.get("birth_date"))
-        if birth is None:
-            continue
-        next_date, age = _next_birthday(
-            birth,
-            year_known=contact.get("birth_year_known", True),
-            today=today,
-        )
-        days = (next_date - today).days
-        if days <= horizon_days:
-            entries.append(
-                BirthdayEntry(
-                    name=contact.get("full_name") or contact.get("first_name", "Onbekend"),
-                    birth_date=birth.isoformat(),
-                    days_until=days,
-                    age=age,
-                    source="contact",
-                )
-            )
-
-    for member in members:
-        person = member.get("person") or {}
-        birth = _parse_date(person.get("birth_date"))
-        if birth is None:
-            continue
-        next_date, age = _next_birthday(birth, year_known=True, today=today)
-        days = (next_date - today).days
-        if days <= horizon_days:
-            entries.append(
-                BirthdayEntry(
-                    name=person.get("full_name") or person.get("first_name", "Onbekend"),
-                    birth_date=birth.isoformat(),
-                    days_until=days,
-                    age=age,
-                    source="member",
-                )
-            )
-
-    entries.sort(key=lambda item: item.days_until)
-    return entries
 
 
 class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
@@ -153,6 +67,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         meal_plan: list[dict[str, Any]] = []
         shopping_lists: list[dict[str, Any]] = []
         tasks: list[dict[str, Any]] = []
+        birthday_people: list[BirthdayPerson] = []
         birthdays: list[BirthdayEntry] = []
 
         if family.get("has_meal_planning"):
@@ -197,13 +112,15 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             except BudionApiError as err:
                 _LOGGER.debug("Members unavailable: %s", err)
 
-            birthdays = _collect_birthdays(contacts, members, today=today)
+            birthday_people = collect_birthday_people(contacts, members)
+            birthdays = upcoming_birthdays(birthday_people, today=today)
 
         return BudionCoordinatorData(
             family=family,
             meal_plan=meal_plan,
             shopping_lists=shopping_lists,
             tasks=tasks,
+            birthday_people=birthday_people,
             birthdays=birthdays,
             fetched_at=datetime.now(),
         )

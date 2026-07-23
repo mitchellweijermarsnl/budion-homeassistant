@@ -15,6 +15,7 @@ This integration connects to the Budion API and exposes useful sensors for your 
 | **Ontbijt / Lunch / Avondeten / Snack** | What is planned for today |
 | **Taken vandaag** | Open family tasks (with full task list in attributes) |
 | **Verjaardagen** | Upcoming birthdays from contacts and family members |
+| **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
 | **Boodschappenlijsten** | One sensor per shopping list with open item count |
 | **Gezin** | Family name and subscription feature flags |
 
@@ -95,7 +96,6 @@ This integration connects to `https://api.budion.com` (production API for app.bu
 
 ## Roadmap
 
-- [ ] Calendar entities for meal plan and birthdays
 - [ ] Dynamic discovery of new shopping lists
 - [ ] Todo list platform for shopping items
 - [ ] Re-authentication flow when tokens expire
