@@ -7,6 +7,9 @@ from typing import Final
 
 DOMAIN: Final = "budion"
 
+# Production API (backend for app.budion.com).
+DEFAULT_API_URL: Final = "https://api.budion.com"
+
 CONF_URL: Final = "url"
 CONF_TOKEN: Final = "token"
 CONF_FAMILY_ID: Final = "family_id"

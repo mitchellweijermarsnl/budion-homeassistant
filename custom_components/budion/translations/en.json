@@ -3,9 +3,8 @@
     "step": {
       "user": {
         "title": "Connect to Budion",
-        "description": "Sign in with your Budion account. An API token will be created for Home Assistant.",
+        "description": "Sign in with your Budion account on app.budion.com. An API token is created automatically for Home Assistant.",
         "data": {
-          "url": "Budion URL",
           "email": "Email address",
           "password": "Password"
         }

@@ -5,12 +5,12 @@ from __future__ import annotations
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_TOKEN, CONF_URL, Platform
+from homeassistant.const import CONF_TOKEN, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import BudionApiClient
-from .const import CONF_FAMILY_ID, CONF_FAMILY_NAME, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_FAMILY_ID, CONF_FAMILY_NAME, DEFAULT_API_URL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import BudionDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -19,7 +19,7 @@ PLATFORMS: list[Platform] = [Platform.SENSOR]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Budion from a config entry."""
     session = async_get_clientsession(hass)
-    client = BudionApiClient(session, entry.data[CONF_URL], entry.data[CONF_TOKEN])
+    client = BudionApiClient(session, DEFAULT_API_URL, entry.data[CONF_TOKEN])
 
     coordinator = BudionDataUpdateCoordinator(
         hass,

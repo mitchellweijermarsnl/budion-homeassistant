@@ -9,7 +9,7 @@ import aiohttp
 import voluptuous as vol
 from aiohttp import ClientConnectorError
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_TOKEN, CONF_URL
+from homeassistant.const import CONF_PASSWORD, CONF_TOKEN
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -24,6 +24,7 @@ from .const import (
     CONF_EMAIL,
     CONF_FAMILY_ID,
     CONF_FAMILY_NAME,
+    DEFAULT_API_URL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -32,7 +33,6 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_URL): str,
         vol.Required(CONF_EMAIL): str,
         vol.Required(CONF_PASSWORD): str,
     }
@@ -48,12 +48,11 @@ STEP_TWO_FACTOR_SCHEMA = vol.Schema(
 
 async def _validate_login(
     hass: HomeAssistant,
-    url: str,
     email: str,
     password: str,
 ) -> tuple[str, list[dict[str, Any]]]:
     session = async_get_clientsession(hass)
-    client = BudionApiClient(session, url)
+    client = BudionApiClient(session, DEFAULT_API_URL)
     token = await client.login(email, password)
     families = await client.get_families()
     return token, families
@@ -62,10 +61,9 @@ async def _validate_login(
 class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Budion."""
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
-        self._url: str | None = None
         self._email: str | None = None
         self._password: str | None = None
         self._challenge_token: str | None = None
@@ -78,14 +76,12 @@ class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            self._url = user_input[CONF_URL].rstrip("/")
             self._email = user_input[CONF_EMAIL]
             self._password = user_input[CONF_PASSWORD]
 
             try:
                 token, families = await _validate_login(
                     self.hass,
-                    self._url,
                     self._email,
                     self._password,
                 )
@@ -115,9 +111,9 @@ class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle two-factor authentication."""
         errors: dict[str, str] = {}
 
-        if user_input is not None and self._challenge_token and self._url:
+        if user_input is not None and self._challenge_token:
             session = async_get_clientsession(self.hass)
-            client = BudionApiClient(session, self._url)
+            client = BudionApiClient(session, DEFAULT_API_URL)
 
             try:
                 token = await client.complete_two_factor(
@@ -154,7 +150,6 @@ class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=family.get("name", "Budion"),
                 data={
-                    CONF_URL: self._url,
                     CONF_TOKEN: token,
                     CONF_EMAIL: self._email,
                     CONF_FAMILY_ID: family["id"],
@@ -173,7 +168,7 @@ class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         token = self.context.get("login_token")
 
-        if user_input is not None and token and self._url:
+        if user_input is not None and token:
             family_id = int(user_input[CONF_FAMILY_ID])
             family = next(
                 (item for item in self._families if item["id"] == family_id),
@@ -185,7 +180,6 @@ class BudionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=family.get("name", "Budion"),
                     data={
-                        CONF_URL: self._url,
                         CONF_TOKEN: token,
                         CONF_EMAIL: self._email,
                         CONF_FAMILY_ID: family_id,

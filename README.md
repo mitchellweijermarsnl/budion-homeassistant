@@ -22,9 +22,10 @@ All meal and task sensors include rich attributes for use in automations, templa
 
 ## Requirements
 
-- Home Assistant 2024.1 or newer
-- A Budion account with a **Premium** or **Pro** subscription (meal planning, tasks, and contacts require paid features)
-- Your Budion instance URL (e.g. `https://budion.test` locally or your production URL)
+- Home Assistant 2024.1 or newer (2026.3+ recommended for inline brand icons)
+- A Budion account on [app.budion.com](https://app.budion.com) with **Premium** or **Pro** (meal planning, tasks, and contacts require paid features)
+
+The integration connects automatically to Budion production — no URL configuration needed.
 
 ## Installation
 
@@ -44,10 +45,9 @@ All meal and task sensors include rich attributes for use in automations, templa
 
 During setup you will be asked for:
 
-1. **Budion URL** — the base URL of your Budion instance
-2. **Email & password** — your Budion account credentials
-3. **2FA code** — only if two-factor authentication is enabled
-4. **Family selection** — only if your account belongs to multiple families
+1. **Email & password** — your [app.budion.com](https://app.budion.com) account
+2. **2FA code** — only if two-factor authentication is enabled
+3. **Family selection** — only if your account belongs to multiple families
 
 A long-lived API token is created and stored securely in Home Assistant.
 
@@ -85,15 +85,13 @@ name: Boodschappen
 
 The `open_items` attribute contains all unchecked items.
 
+## Branding
+
+The Budion logo is bundled in `custom_components/budion/brand/` so it appears in Home Assistant during setup, updates, and on the Integrations page (Home Assistant 2026.3+).
+
 ## Development
 
-This integration lives alongside the Budion API project. The API uses Laravel Sanctum bearer tokens at `/api/v1/*`.
-
-To test locally with [Laravel Herd](https://herd.laravel.com):
-
-```
-URL: https://budion.test
-```
+This integration connects to `https://api.budion.com` (production API for app.budion.com). The API uses Laravel Sanctum bearer tokens at `/api/v1/*`.
 
 ## Roadmap
 
