@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Verbinden met Budion",
+        "description": "Log in met je Budion-account. Er wordt een API-token aangemaakt voor Home Assistant.",
+        "data": {
+          "url": "Budion URL",
+          "email": "E-mailadres",
+          "password": "Wachtwoord"
+        }
+      },
+      "two_factor": {
+        "title": "Tweestapsverificatie",
+        "description": "Voer je 2FA-code in. Vink 'recovery' aan als je een herstelcode gebruikt.",
+        "data": {
+          "code": "Code",
+          "recovery": "Herstelcode gebruiken"
+        }
+      },
+      "family": {
+        "title": "Kies een gezin",
+        "description": "Je account heeft meerdere gezinnen. Selecteer welk gezin Home Assistant moet tonen.",
+        "data": {
+          "family_id": "Gezin"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ongeldige inloggegevens",
+      "cannot_connect": "Kan geen verbinding maken met Budion",
+      "family_not_found": "Geselecteerd gezin niet gevonden"
+    },
+    "abort": {
+      "no_families": "Geen gezinnen gevonden voor dit account"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Budion instellingen",
+        "data": {
+          "scan_interval": "Verversinterval (seconden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "meal_breakfast": {
+        "name": "Ontbijt"
+      },
+      "meal_lunch": {
+        "name": "Lunch"
+      },
+      "meal_dinner": {
+        "name": "Avondeten"
+      },
+      "meal_snack": {
+        "name": "Snack"
+      },
+      "tasks_today": {
+        "name": "Taken vandaag"
+      },
+      "upcoming_birthdays": {
+        "name": "Verjaardagen"
+      },
+      "family": {
+        "name": "Gezin"
+      },
+      "shopping_list": {
+        "name": "{list_name}"
+      }
+    }
+  }
+}

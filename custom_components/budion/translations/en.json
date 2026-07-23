@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Budion",
+        "description": "Sign in with your Budion account. An API token will be created for Home Assistant.",
+        "data": {
+          "url": "Budion URL",
+          "email": "Email address",
+          "password": "Password"
+        }
+      },
+      "two_factor": {
+        "title": "Two-factor authentication",
+        "description": "Enter your 2FA code. Enable recovery if you are using a recovery code.",
+        "data": {
+          "code": "Code",
+          "recovery": "Use recovery code"
+        }
+      },
+      "family": {
+        "title": "Choose a family",
+        "description": "Your account has multiple families. Select which family Home Assistant should display.",
+        "data": {
+          "family_id": "Family"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid credentials",
+      "cannot_connect": "Unable to connect to Budion",
+      "family_not_found": "Selected family not found"
+    },
+    "abort": {
+      "no_families": "No families found for this account"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Budion options",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "meal_breakfast": {
+        "name": "Breakfast"
+      },
+      "meal_lunch": {
+        "name": "Lunch"
+      },
+      "meal_dinner": {
+        "name": "Dinner"
+      },
+      "meal_snack": {
+        "name": "Snack"
+      },
+      "tasks_today": {
+        "name": "Tasks today"
+      },
+      "upcoming_birthdays": {
+        "name": "Birthdays"
+      },
+      "family": {
+        "name": "Family"
+      },
+      "shopping_list": {
+        "name": "{list_name}"
+      }
+    }
+  }
+}
