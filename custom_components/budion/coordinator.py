@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import BudionApiClient, BudionApiError, BudionAuthError
@@ -54,7 +55,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         self.family_id = family_id
 
     async def _async_update_data(self) -> BudionCoordinatorData:
-        today = date.today()
+        today = dt_util.now().date()
         week_end = today + timedelta(days=6)
 
         try:
@@ -83,7 +84,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
                 else:
                     meal_plan = raw_entries
             except BudionApiError as err:
-                _LOGGER.debug("Meal plan unavailable: %s", err)
+                _LOGGER.warning("Meal plan unavailable: %s", err)
 
             try:
                 shopping_lists = await self.client.get_shopping_lists(self.family_id)
@@ -136,7 +137,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
 
     def meals_for_today(self, meal_type: str) -> dict[str, Any] | None:
         """Return today's meal for a given meal type."""
-        return self.meals_for_date(date.today(), meal_type)
+        return self.meals_for_date(dt_util.now().date(), meal_type)
 
     def meal_title(self, entry: dict[str, Any] | None) -> str:
         """Return a display title for a meal entry."""

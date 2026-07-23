@@ -11,11 +11,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .birthdays import format_upcoming_summary, group_upcoming_by_date
 from .const import (
     CONF_FAMILY_NAME,
     DOMAIN,
+    MEAL_SENSOR_API_TYPES,
     SENSOR_BIRTHDAYS,
     SENSOR_FAMILY,
     SENSOR_MEAL_BREAKFAST,
@@ -61,8 +63,15 @@ async def async_setup_entry(
     family_name: str = entry.data.get(CONF_FAMILY_NAME, entry.title)
 
     entities: list[SensorEntity] = [
-        BudionMealSensor(coordinator, entry, family_name, meal_type, description)
-        for meal_type, description in MEAL_SENSOR_DESCRIPTIONS.items()
+        BudionMealSensor(
+            coordinator,
+            entry,
+            family_name,
+            sensor_key,
+            MEAL_SENSOR_API_TYPES[sensor_key],
+            description,
+        )
+        for sensor_key, description in MEAL_SENSOR_DESCRIPTIONS.items()
     ]
     entities.extend(
         [
@@ -117,26 +126,31 @@ class BudionMealSensor(BudionEntity):
         coordinator: BudionDataUpdateCoordinator,
         entry: ConfigEntry,
         family_name: str,
-        meal_type: str,
+        sensor_key: str,
+        api_meal_type: str,
         description: SensorEntityDescription,
     ) -> None:
         super().__init__(coordinator, entry, family_name)
-        self._meal_type = meal_type
+        self._sensor_key = sensor_key
+        self._api_meal_type = api_meal_type
         self.entity_description = description
-        self._attr_unique_id = f"{entry.entry_id}_{meal_type}"
+        self._attr_unique_id = f"{entry.entry_id}_{sensor_key}"
 
     @property
     def native_value(self) -> str:
         """Return today's meal title."""
-        entry = self.coordinator.meals_for_today(self._meal_type)
+        entry = self.coordinator.meals_for_today(self._api_meal_type)
         return self.coordinator.meal_title(entry)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return meal details."""
-        entry = self.coordinator.meals_for_today(self._meal_type)
+        entry = self.coordinator.meals_for_today(self._api_meal_type)
         if not entry:
-            return {"date": date.today().isoformat(), "meal_type": self._meal_type}
+            return {
+                "date": dt_util.now().date().isoformat(),
+                "meal_type": self._api_meal_type,
+            }
 
         recipe = entry.get("recipe") or {}
         return {

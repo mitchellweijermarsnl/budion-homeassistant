@@ -30,6 +30,13 @@ SENSOR_TASKS: Final = "tasks_today"
 SENSOR_BIRTHDAYS: Final = "upcoming_birthdays"
 SENSOR_FAMILY: Final = "family"
 
+MEAL_SENSOR_API_TYPES: Final = {
+    SENSOR_MEAL_BREAKFAST: "breakfast",
+    SENSOR_MEAL_LUNCH: "lunch",
+    SENSOR_MEAL_DINNER: "dinner",
+    SENSOR_MEAL_SNACK: "snack",
+}
+
 SENSOR_TYPES: Final = (
     SENSOR_MEAL_BREAKFAST,
     SENSOR_MEAL_LUNCH,
