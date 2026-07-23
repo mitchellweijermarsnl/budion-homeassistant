@@ -100,20 +100,22 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             except BudionApiError as err:
                 _LOGGER.debug("Tasks unavailable: %s", err)
 
+        contacts: list[dict[str, Any]] = []
+        members: list[dict[str, Any]] = []
+
+        try:
+            members = await self.client.get_members(self.family_id)
+        except BudionApiError as err:
+            _LOGGER.debug("Members unavailable: %s", err)
+
         if family.get("has_contacts"):
-            contacts: list[dict[str, Any]] = []
-            members: list[dict[str, Any]] = []
             try:
                 contacts = await self.client.get_contacts(self.family_id)
             except BudionApiError as err:
                 _LOGGER.debug("Contacts unavailable: %s", err)
-            try:
-                members = await self.client.get_members(self.family_id)
-            except BudionApiError as err:
-                _LOGGER.debug("Members unavailable: %s", err)
 
-            birthday_people = collect_birthday_people(contacts, members)
-            birthdays = upcoming_birthdays(birthday_people, today=today)
+        birthday_people = collect_birthday_people(contacts, members)
+        birthdays = upcoming_birthdays(birthday_people, today=today)
 
         return BudionCoordinatorData(
             family=family,

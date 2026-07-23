@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
-from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.components.calendar import (
+    CalendarEntity,
+    CalendarEntityDescription,
+    CalendarEvent,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -14,6 +19,22 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .birthdays import birthday_events_in_range, upcoming_birthdays
 from .const import CONF_FAMILY_NAME, DOMAIN
 from .coordinator import BudionDataUpdateCoordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+try:
+    CALENDAR_DESCRIPTION = CalendarEntityDescription(
+        key="birthdays",
+        translation_key="birthdays",
+        icon="mdi:cake-variant",
+        initial_color="#ff0072",
+    )
+except TypeError:
+    CALENDAR_DESCRIPTION = CalendarEntityDescription(
+        key="birthdays",
+        translation_key="birthdays",
+        icon="mdi:cake-variant",
+    )
 
 
 async def async_setup_entry(
@@ -25,18 +46,23 @@ async def async_setup_entry(
     coordinator: BudionDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     family_name: str = entry.data.get(CONF_FAMILY_NAME, entry.title)
 
-    if not coordinator.data.family.get("has_contacts"):
-        return
+    _LOGGER.debug(
+        "Registering Budion birthday calendar (%s people)",
+        len(coordinator.data.birthday_people),
+    )
 
-    async_add_entities([BudionBirthdayCalendar(coordinator, entry, family_name)])
+    async_add_entities(
+        [BudionBirthdayCalendar(coordinator, entry, family_name)],
+        update_before_add=True,
+    )
 
 
 class BudionBirthdayCalendar(CoordinatorEntity[BudionDataUpdateCoordinator], CalendarEntity):
     """Calendar with all Budion birthdays."""
 
+    entity_description = CALENDAR_DESCRIPTION
     _attr_has_entity_name = True
-    _attr_translation_key = "birthdays"
-    _attr_icon = "mdi:cake-variant"
+    _attr_initial_color = "#ff0072"
 
     def __init__(
         self,
