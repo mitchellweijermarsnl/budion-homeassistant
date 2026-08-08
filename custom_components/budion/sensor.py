@@ -89,16 +89,6 @@ async def async_setup_entry(
                 )
             )
 
-        for shopping_list in coordinator.data.shopping_lists:
-            entities.append(
-                BudionShoppingListSensor(
-                    coordinator,
-                    entry,
-                    family_name,
-                    shopping_list,
-                )
-            )
-
     for child in coordinator.data.children:
         if family.get("has_budcoins"):
             entities.append(
@@ -114,8 +104,11 @@ async def async_setup_entry(
     known_birthday_keys: set[str] = set()
 
     def _async_add_birthday_sensors() -> None:
+        """Create sensors only for family members; contacts stay in the agenda card."""
         new_entities: list[SensorEntity] = []
         for birthday in coordinator.data.birthdays:
+            if birthday.source != "member":
+                continue
             if birthday.key in known_birthday_keys:
                 continue
             known_birthday_keys.add(birthday.key)
@@ -446,63 +439,6 @@ class BudionFamilySensor(BudionEntity):
             "default_servings": meal_settings.get("default_servings"),
             "last_updated": self.coordinator.data.fetched_at.isoformat(),
         }
-
-
-class BudionShoppingListSensor(BudionEntity):
-    """Sensor for a shopping list."""
-
-    _attr_icon = "mdi:cart-outline"
-
-    def __init__(
-        self,
-        coordinator: BudionDataUpdateCoordinator,
-        entry: ConfigEntry,
-        family_name: str,
-        shopping_list: dict[str, Any],
-    ) -> None:
-        super().__init__(coordinator, entry, family_name)
-        self._list_id = shopping_list["id"]
-        self._list_name = shopping_list.get("name", f"Lijst {self._list_id}")
-        self._attr_unique_id = f"{entry.entry_id}_shopping_list_{self._list_id}"
-        self._attr_translation_key = "shopping_list"
-        self._attr_translation_placeholders = {"list_name": self._list_name}
-
-    @property
-    def native_value(self) -> int:
-        """Return the number of open shopping list items."""
-        shopping_list = self._find_list()
-        if not shopping_list:
-            return 0
-        return len(shopping_list.get("open_items") or [])
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return shopping list details."""
-        shopping_list = self._find_list() or {}
-        store = shopping_list.get("store") or {}
-        open_items = shopping_list.get("open_items") or []
-        checked_items = shopping_list.get("checked_items") or []
-
-        return {
-            "list_id": self._list_id,
-            "list_name": self._list_name,
-            "store": store.get("name"),
-            "open_items": [
-                {
-                    "name": item.get("name"),
-                    "quantity": item.get("quantity"),
-                    "unit": item.get("unit"),
-                }
-                for item in open_items
-            ],
-            "checked_count": len(checked_items),
-        }
-
-    def _find_list(self) -> dict[str, Any] | None:
-        for shopping_list in self.coordinator.data.shopping_lists:
-            if shopping_list.get("id") == self._list_id:
-                return shopping_list
-        return None
 
 
 class BudionChildSensor(BudionEntity):

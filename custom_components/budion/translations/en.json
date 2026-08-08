@@ -68,9 +68,6 @@
       "family": {
         "name": "Family"
       },
-      "shopping_list": {
-        "name": "{list_name}"
-      },
       "child_budcoins": {
         "name": "{child_name} · Budcoins"
       },
@@ -83,7 +80,7 @@
     },
     "todo": {
       "shopping_list": {
-        "name": "{list_name}"
+        "name": "Shopping · {list_name}"
       }
     }
   },

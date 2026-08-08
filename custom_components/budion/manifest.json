@@ -3,10 +3,11 @@
   "name": "budion",
   "codeowners": ["@mitchellweijermarsnl"],
   "config_flow": true,
+  "dependencies": ["frontend", "http", "lovelace"],
   "documentation": "https://github.com/mitchellweijermarsnl/budion-homeassistant",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/mitchellweijermarsnl/budion-homeassistant/issues",
   "requirements": [],
-  "version": "0.7.0"
+  "version": "0.8.0"
 }

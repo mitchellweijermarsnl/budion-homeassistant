@@ -2,10 +2,30 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from pathlib import Path
 from typing import Final
 
 DOMAIN: Final = "budion"
+
+_MANIFEST_PATH = Path(__file__).parent / "manifest.json"
+with _MANIFEST_PATH.open(encoding="utf-8") as _manifest_file:
+    INTEGRATION_VERSION: Final[str] = json.load(_manifest_file).get("version", "0.0.0")
+
+FRONTEND_URL_BASE: Final = f"/{DOMAIN}-frontend"
+JSMODULES: Final = [
+    {
+        "name": "Budion Birthdays Card",
+        "filename": "budion-birthdays-card.js",
+        "version": INTEGRATION_VERSION,
+    },
+    {
+        "name": "Budion Shopping Card",
+        "filename": "budion-shopping-card.js",
+        "version": INTEGRATION_VERSION,
+    },
+]
 
 # Production API (backend for app.budion.com).
 DEFAULT_API_URL: Final = "https://api.budion.com"

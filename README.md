@@ -14,10 +14,11 @@ This integration connects to the Budion API and exposes useful sensors for your 
 |--------|-------------|
 | **Ontbijt / Lunch / Avondeten / Snack** | What is planned for today (only enabled meal types; food icons follow Budion) |
 | **Taken vandaag** | Open family tasks (with full task list in attributes) |
-| **Verjaardagen** | Upcoming birthdays summary (avatar of the next person) |
-| **Per verjaardag** | One sensor per person in the horizon, with photo + days until |
+| **Verjaardagen** | Upcoming birthdays summary for the agenda card (contacts + family) |
+| **Birthday agenda card** | Built-in Lovelace widget with photos for everyone in the horizon |
+| **Gezinsleden jarig** | Sensors only for family members (with photo + days until) |
 | **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
-| **Boodschappenlijsten** | Interactive to-do lists (check / add / delete) + optional count sensors |
+| **Boodschappen** | Interactive shopping lists (`todo.*`) + **Budion Boodschappen** card |
 | **Gezin** | Family name and subscription feature flags |
 | **Per kind** | Budcoin-saldo + open taken (tiener, kind, jong kind) |
 
@@ -93,40 +94,33 @@ name: Open taken
 
 Use the `tasks` attribute in a Markdown or template card for a full list.
 
-### Birthdays with photos
+### Birthday agenda widget
 
-Each upcoming birthday (within your configured horizon) becomes a sensor with `entity_picture`. A glance card works great on phones and touchscreens:
+The integration ships a Lovelace card that shows upcoming birthdays as an agenda with photos:
 
 ```yaml
-type: glance
+type: custom:budion-birthdays-card
+entity: sensor.<family>_verjaardagen
 title: Verjaardagen
-entities:
-  - sensor.<family>_anna
-  - sensor.<family>_sam
-columns: 3
 ```
 
-Or use the native calendar list view:
+Optional: `max_items: 8`. The list respects your integration option **Birthday days** (default all / 365; set `14` for the next two weeks) and includes **contacts + family members**.
+
+Family members also get individual sensors (with photo) for glance cards/automations; contacts only appear in this agenda widget / calendar.
+
+After installing/updating, restart Home Assistant once so the card resource is registered. Then add **Budion Birthdays** from the card picker, or use the YAML above.
+
+### Shopping list / boodschappen
+
+Use the Budion shopping card (recommended — named **Boodschappen**, not “takenlijst”):
 
 ```yaml
-type: calendar
-initial_view: listWeek
-entities:
-  - calendar.<family>_verjaardagen
-```
-
-### Shopping list
-
-Use the native Home Assistant to-do list card — works well on phones and touchscreens:
-
-```yaml
-type: todo-list
+type: custom:budion-shopping-card
 entity: todo.<family>_weekboodschappen
+title: Boodschappen
 ```
 
-You can check items off, add new ones, delete completed items, and reorder. Changes sync back to Budion.
-
-The older `sensor.<family>_…` shopping-list entities still expose the open-item count for badges and automations.
+Under the hood these are Home Assistant `todo.*` entities (`Boodschappen · <lijstnaam>`), so check / add / delete syncs to Budion. The built-in `todo-list` card also works if you prefer.
 
 ### Child budcoins and tasks
 
