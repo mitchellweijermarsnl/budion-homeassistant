@@ -4,7 +4,8 @@
  * type: custom:budion-birthdays-card
  * entity: sensor.<family>_verjaardagen
  * title: Verjaardagen   # optional
- * max_items: 10         # optional
+ * max_days: 14          # optional — only show birthdays within N days
+ * max_items: 10         # optional — limit number of rows after day filter
  */
 class BudionBirthdaysCard extends HTMLElement {
   static getStubConfig(hass) {
@@ -20,6 +21,7 @@ class BudionBirthdaysCard extends HTMLElement {
       type: "custom:budion-birthdays-card",
       entity: entity || "",
       title: "Verjaardagen",
+      max_days: 30,
     };
   }
 
@@ -33,6 +35,7 @@ class BudionBirthdaysCard extends HTMLElement {
     }
     this._config = {
       title: "Verjaardagen",
+      max_days: 0,
       max_items: 0,
       ...config,
     };
@@ -58,8 +61,21 @@ class BudionBirthdaysCard extends HTMLElement {
     if (!Array.isArray(birthdays)) {
       return [];
     }
+
+    const maxDays = Number(this._config.max_days) || 0;
     const maxItems = Number(this._config.max_items) || 0;
-    return maxItems > 0 ? birthdays.slice(0, maxItems) : birthdays;
+
+    let filtered = birthdays;
+    if (maxDays > 0) {
+      filtered = filtered.filter((item) => {
+        const days = Number(item?.days_until);
+        return Number.isFinite(days) && days >= 0 && days <= maxDays;
+      });
+    }
+    if (maxItems > 0) {
+      filtered = filtered.slice(0, maxItems);
+    }
+    return filtered;
   }
 
   _formatRelative(daysUntil, locale) {
@@ -293,11 +309,13 @@ class BudionBirthdaysCardEditor extends HTMLElement {
         <div class="form">
           <ha-textfield id="title" label="Title" style="width:100%;margin-bottom:12px;"></ha-textfield>
           <ha-selector id="entity"></ha-selector>
+          <ha-textfield id="max_days" label="Max days ahead (0 = all)" type="number" style="width:100%;margin-top:12px;"></ha-textfield>
           <ha-textfield id="max_items" label="Max items (0 = all)" type="number" style="width:100%;margin-top:12px;"></ha-textfield>
         </div>
       `;
       this._title = this.querySelector("#title");
       this._entity = this.querySelector("#entity");
+      this._maxDays = this.querySelector("#max_days");
       this._max = this.querySelector("#max_items");
       this._entity.selector = { entity: { domain: "sensor" } };
       this._title.addEventListener("change", () => this._changed());
@@ -306,6 +324,8 @@ class BudionBirthdaysCardEditor extends HTMLElement {
         this._config = { ...this._config, entity: ev.detail.value };
         this._fire();
       });
+      this._maxDays.addEventListener("change", () => this._changed());
+      this._maxDays.addEventListener("input", () => this._changed());
       this._max.addEventListener("change", () => this._changed());
       this._max.addEventListener("input", () => this._changed());
       this._built = true;
@@ -313,6 +333,7 @@ class BudionBirthdaysCardEditor extends HTMLElement {
     this._title.value = this._config.title || "";
     this._entity.value = this._config.entity || "";
     this._entity.hass = this._hass;
+    this._maxDays.value = String(this._config.max_days ?? 0);
     this._max.value = String(this._config.max_items ?? 0);
   }
 
@@ -320,6 +341,7 @@ class BudionBirthdaysCardEditor extends HTMLElement {
     this._config = {
       ...this._config,
       title: this._title.value,
+      max_days: Number(this._maxDays.value || 0),
       max_items: Number(this._max.value || 0),
     };
     this._fire();

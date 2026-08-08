@@ -102,9 +102,14 @@ The integration ships a Lovelace card that shows upcoming birthdays as an agenda
 type: custom:budion-birthdays-card
 entity: sensor.<family>_verjaardagen
 title: Verjaardagen
+max_days: 14
 ```
 
-Optional: `max_items: 8`. The list respects your integration option **Birthday days** (default all / 365; set `14` for the next two weeks) and includes **contacts + family members**.
+Optional:
+- `max_days: 14` — only birthdays within the next N days (`0` = all from the sensor)
+- `max_items: 8` — max rows after the day filter
+
+The sensor itself still follows the integration option **Birthday days** (default 365). The card can narrow that further with `max_days`. Includes **contacts + family members**.
 
 Family members also get individual sensors (with photo) for glance cards/automations; contacts only appear in this agenda widget / calendar.
 
