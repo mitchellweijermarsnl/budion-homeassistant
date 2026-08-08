@@ -3,10 +3,10 @@
   "name": "budion",
   "codeowners": ["@mitchellweijermarsnl"],
   "config_flow": true,
-  "documentation": "https://github.com/mitchellweijermarsnl/budion-hassio",
+  "documentation": "https://github.com/mitchellweijermarsnl/budion-homeassistant",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/mitchellweijermarsnl/budion-hassio/issues",
+  "issue_tracker": "https://github.com/mitchellweijermarsnl/budion-homeassistant/issues",
   "requirements": [],
-  "version": "0.5.0"
+  "version": "0.5.1"
 }
