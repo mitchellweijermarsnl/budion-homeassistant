@@ -15,8 +15,12 @@ CONF_TOKEN: Final = "token"
 CONF_FAMILY_ID: Final = "family_id"
 CONF_FAMILY_NAME: Final = "family_name"
 CONF_EMAIL: Final = "email"
+CONF_SCAN_INTERVAL: Final = "scan_interval"
+CONF_BIRTHDAY_DAYS: Final = "birthday_days"
 
 DEFAULT_SCAN_INTERVAL: Final = timedelta(minutes=5)
+# 365 ≈ everyone's next birthday once; lower values filter the dashboard sensors.
+DEFAULT_BIRTHDAY_DAYS: Final = 365
 API_PREFIX: Final = "/api/v1"
 DEVICE_NAME: Final = "Home Assistant"
 

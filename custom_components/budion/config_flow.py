@@ -21,10 +21,13 @@ from .api import (
     BudionTwoFactorRequired,
 )
 from .const import (
+    CONF_BIRTHDAY_DAYS,
     CONF_EMAIL,
     CONF_FAMILY_ID,
     CONF_FAMILY_NAME,
+    CONF_SCAN_INTERVAL,
     DEFAULT_API_URL,
+    DEFAULT_BIRTHDAY_DAYS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -221,8 +224,12 @@ class BudionOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         scan_interval = self.config_entry.options.get(
-            "scan_interval",
+            CONF_SCAN_INTERVAL,
             int(DEFAULT_SCAN_INTERVAL.total_seconds()),
+        )
+        birthday_days = self.config_entry.options.get(
+            CONF_BIRTHDAY_DAYS,
+            DEFAULT_BIRTHDAY_DAYS,
         )
 
         return self.async_show_form(
@@ -230,9 +237,13 @@ class BudionOptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        "scan_interval",
+                        CONF_SCAN_INTERVAL,
                         default=scan_interval,
                     ): vol.All(vol.Coerce(int), vol.Range(min=60, max=3600)),
+                    vol.Required(
+                        CONF_BIRTHDAY_DAYS,
+                        default=birthday_days,
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=365)),
                 }
             ),
         )

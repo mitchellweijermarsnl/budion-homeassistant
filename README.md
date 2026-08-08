@@ -14,9 +14,10 @@ This integration connects to the Budion API and exposes useful sensors for your 
 |--------|-------------|
 | **Ontbijt / Lunch / Avondeten / Snack** | What is planned for today (only enabled meal types; food icons follow Budion) |
 | **Taken vandaag** | Open family tasks (with full task list in attributes) |
-| **Verjaardagen** | Upcoming birthdays from contacts and family members |
+| **Verjaardagen** | Upcoming birthdays summary (avatar of the next person) |
+| **Per verjaardag** | One sensor per person in the horizon, with photo + days until |
 | **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
-| **Boodschappenlijsten** | One sensor per shopping list with open item count |
+| **Boodschappenlijsten** | Interactive to-do lists (check / add / delete) + optional count sensors |
 | **Gezin** | Family name and subscription feature flags |
 | **Per kind** | Budcoin-saldo + open taken (tiener, kind, jong kind) |
 
@@ -55,7 +56,10 @@ A long-lived API token is created and stored securely in Home Assistant.
 
 ### Options
 
-After setup, you can configure the **update interval** (60–3600 seconds, default 300) via the integration options.
+After setup, via the integration options:
+
+- **Update interval** — 60–3600 seconds (default 300)
+- **Birthday days** — how many days ahead to show birthday person sensors for contacts + family members (default **365 = all**; e.g. `14` = only the next two weeks)
 
 ## Example dashboard cards
 
@@ -89,15 +93,40 @@ name: Open taken
 
 Use the `tasks` attribute in a Markdown or template card for a full list.
 
-### Shopping list
+### Birthdays with photos
+
+Each upcoming birthday (within your configured horizon) becomes a sensor with `entity_picture`. A glance card works great on phones and touchscreens:
 
 ```yaml
-type: entity
-entity: sensor.<family>_weekboodschappen
-name: Boodschappen
+type: glance
+title: Verjaardagen
+entities:
+  - sensor.<family>_anna
+  - sensor.<family>_sam
+columns: 3
 ```
 
-The `open_items` attribute contains all unchecked items.
+Or use the native calendar list view:
+
+```yaml
+type: calendar
+initial_view: listWeek
+entities:
+  - calendar.<family>_verjaardagen
+```
+
+### Shopping list
+
+Use the native Home Assistant to-do list card — works well on phones and touchscreens:
+
+```yaml
+type: todo-list
+entity: todo.<family>_weekboodschappen
+```
+
+You can check items off, add new ones, delete completed items, and reorder. Changes sync back to Budion.
+
+The older `sensor.<family>_…` shopping-list entities still expose the open-item count for badges and automations.
 
 ### Child budcoins and tasks
 
@@ -125,7 +154,7 @@ This integration connects to `https://api.budion.com` (production API for app.bu
 ## Roadmap
 
 - [ ] Dynamic discovery of new shopping lists / meal types without reload
-- [ ] Todo list platform for shopping items
+- [x] Todo list platform for shopping items
 - [ ] Re-authentication flow when tokens expire
 
 ## License

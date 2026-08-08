@@ -18,6 +18,7 @@ class BirthdayPerson:
     birth_date: date
     birth_year_known: bool
     source: str
+    avatar_url: str | None = None
 
 
 @dataclass
@@ -31,6 +32,7 @@ class BirthdayEntry:
     days_until: int
     age: int | None
     source: str
+    avatar_url: str | None = None
 
 
 def parse_date(value: str | None) -> date | None:
@@ -73,6 +75,7 @@ def collect_birthday_people(
         birth = parse_date(contact.get("birth_date"))
         if birth is None:
             continue
+        avatar = contact.get("avatar_url")
         people.append(
             BirthdayPerson(
                 key=f"contact-{contact['id']}",
@@ -80,14 +83,18 @@ def collect_birthday_people(
                 birth_date=birth,
                 birth_year_known=contact.get("birth_year_known", True),
                 source="contact",
+                avatar_url=avatar if isinstance(avatar, str) and avatar else None,
             )
         )
 
     for member in members:
         person = member.get("person") or {}
+        if not isinstance(person, dict):
+            continue
         birth = parse_date(person.get("birth_date"))
         if birth is None or person.get("id") is None:
             continue
+        avatar = person.get("avatar_url")
         people.append(
             BirthdayPerson(
                 key=f"member-{person['id']}",
@@ -95,6 +102,7 @@ def collect_birthday_people(
                 birth_date=birth,
                 birth_year_known=True,
                 source="member",
+                avatar_url=avatar if isinstance(avatar, str) and avatar else None,
             )
         )
 
@@ -128,6 +136,7 @@ def upcoming_birthdays(
                 days_until=days_until,
                 age=age if person.birth_year_known else None,
                 source=person.source,
+                avatar_url=person.avatar_url,
             )
         )
 

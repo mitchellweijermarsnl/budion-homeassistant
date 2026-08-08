@@ -18,7 +18,13 @@ from .birthdays import (
     collect_birthday_people,
     upcoming_birthdays,
 )
-from .const import DEFAULT_ENABLED_MEAL_TYPES, DEFAULT_SCAN_INTERVAL, DOMAIN, MEAL_TYPES
+from .const import (
+    DEFAULT_BIRTHDAY_DAYS,
+    DEFAULT_ENABLED_MEAL_TYPES,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    MEAL_TYPES,
+)
 from .food_icons import food_icon_to_mdi
 from .members import ChildMember, build_children
 
@@ -47,6 +53,8 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         hass: HomeAssistant,
         client: BudionApiClient,
         family_id: int,
+        *,
+        birthday_days: int = DEFAULT_BIRTHDAY_DAYS,
     ) -> None:
         super().__init__(
             hass,
@@ -56,6 +64,7 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         )
         self.client = client
         self.family_id = family_id
+        self.birthday_days = birthday_days
 
     async def _async_update_data(self) -> BudionCoordinatorData:
         today = dt_util.now().date()
@@ -127,7 +136,11 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
                 _LOGGER.debug("Contacts unavailable: %s", err)
 
         birthday_people = collect_birthday_people(contacts, members)
-        birthdays = upcoming_birthdays(birthday_people, today=today)
+        birthdays = upcoming_birthdays(
+            birthday_people,
+            today=today,
+            horizon_days=self.birthday_days,
+        )
         children = build_children(members, wallets, tasks)
 
         return BudionCoordinatorData(
@@ -209,3 +222,42 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             if child.membership_id == membership_id:
                 return child
         return None
+
+    def birthday_by_key(self, key: str) -> BirthdayEntry | None:
+        """Return an upcoming birthday entry by person key."""
+        for entry in self.data.birthdays:
+            if entry.key == key:
+                return entry
+        return None
+
+    def shopping_list_by_id(self, list_id: int) -> dict[str, Any] | None:
+        """Return a shopping list by ID."""
+        for shopping_list in self.data.shopping_lists:
+            if shopping_list.get("id") == list_id:
+                return shopping_list
+        return None
+
+    @staticmethod
+    def shopping_list_items(
+        shopping_list: dict[str, Any] | None,
+        *,
+        checked: bool | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return shopping list items, optionally filtered by checked state."""
+        if not shopping_list:
+            return []
+
+        def _as_list(value: Any) -> list[dict[str, Any]]:
+            if isinstance(value, dict):
+                value = value.get("data", [])
+            if not isinstance(value, list):
+                return []
+            return [item for item in value if isinstance(item, dict)]
+
+        if checked is True:
+            return _as_list(shopping_list.get("checked_items"))
+        if checked is False:
+            return _as_list(shopping_list.get("open_items"))
+        return _as_list(shopping_list.get("open_items")) + _as_list(
+            shopping_list.get("checked_items")
+        )

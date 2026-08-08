@@ -39,7 +39,8 @@
       "init": {
         "title": "Budion instellingen",
         "data": {
-          "scan_interval": "Verversinterval (seconden)"
+          "scan_interval": "Verversinterval (seconden)",
+          "birthday_days": "Verjaardagen tonen (dagen vooruit, 365 = alle)"
         }
       }
     }
@@ -75,6 +76,14 @@
       },
       "child_tasks": {
         "name": "{child_name} · Taken"
+      },
+      "birthday_person": {
+        "name": "{person_name}"
+      }
+    },
+    "todo": {
+      "shopping_list": {
+        "name": "{list_name}"
       }
     }
   },

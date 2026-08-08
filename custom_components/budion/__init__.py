@@ -10,10 +10,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import BudionApiClient
-from .const import CONF_FAMILY_ID, CONF_FAMILY_NAME, DEFAULT_API_URL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import (
+    CONF_BIRTHDAY_DAYS,
+    CONF_FAMILY_ID,
+    CONF_FAMILY_NAME,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_API_URL,
+    DEFAULT_BIRTHDAY_DAYS,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 from .coordinator import BudionDataUpdateCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR, Platform.TODO]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -21,14 +30,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
     client = BudionApiClient(session, DEFAULT_API_URL, entry.data[CONF_TOKEN])
 
+    birthday_days = entry.options.get(CONF_BIRTHDAY_DAYS, DEFAULT_BIRTHDAY_DAYS)
     coordinator = BudionDataUpdateCoordinator(
         hass,
         client,
         entry.data[CONF_FAMILY_ID],
+        birthday_days=int(birthday_days),
     )
 
     scan_interval = entry.options.get(
-        "scan_interval",
+        CONF_SCAN_INTERVAL,
         int(DEFAULT_SCAN_INTERVAL.total_seconds()),
     )
     coordinator.update_interval = timedelta(seconds=scan_interval)

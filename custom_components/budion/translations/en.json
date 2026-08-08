@@ -39,7 +39,8 @@
       "init": {
         "title": "Budion options",
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "birthday_days": "Show birthdays (days ahead, 365 = all)"
         }
       }
     }
@@ -75,6 +76,14 @@
       },
       "child_tasks": {
         "name": "{child_name} · Tasks"
+      },
+      "birthday_person": {
+        "name": "{person_name}"
+      }
+    },
+    "todo": {
+      "shopping_list": {
+        "name": "{list_name}"
       }
     }
   },

@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .birthdays import format_upcoming_summary, group_upcoming_by_date
+from .birthdays import BirthdayEntry, format_upcoming_summary, group_upcoming_by_date
 from .const import (
     CONF_FAMILY_NAME,
     DOMAIN,
@@ -110,6 +110,29 @@ async def async_setup_entry(
             )
 
     async_add_entities(entities)
+
+    known_birthday_keys: set[str] = set()
+
+    def _async_add_birthday_sensors() -> None:
+        new_entities: list[SensorEntity] = []
+        for birthday in coordinator.data.birthdays:
+            if birthday.key in known_birthday_keys:
+                continue
+            known_birthday_keys.add(birthday.key)
+            new_entities.append(
+                BudionBirthdayPersonSensor(
+                    coordinator,
+                    entry,
+                    family_name,
+                    birthday.key,
+                    birthday.name,
+                )
+            )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _async_add_birthday_sensors()
+    entry.async_on_unload(coordinator.async_add_listener(_async_add_birthday_sensors))
 
 
 class BudionEntity(CoordinatorEntity[BudionDataUpdateCoordinator], SensorEntity):
@@ -275,6 +298,14 @@ class BudionBirthdaysSensor(BudionEntity):
         return format_upcoming_summary(self.coordinator.data.birthdays)
 
     @property
+    def entity_picture(self) -> str | None:
+        """Return the next birthday person's avatar."""
+        birthdays = self.coordinator.data.birthdays
+        if not birthdays:
+            return None
+        return birthdays[0].avatar_url
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return birthday details."""
         grouped = [
@@ -288,6 +319,7 @@ class BudionBirthdaysSensor(BudionEntity):
                         "birth_date": entry.birth_date.isoformat(),
                         "age": entry.age,
                         "source": entry.source,
+                        "image_url": entry.avatar_url,
                     }
                     for entry in day_entries
                 ],
@@ -298,6 +330,7 @@ class BudionBirthdaysSensor(BudionEntity):
         ]
 
         return {
+            "horizon_days": self.coordinator.birthday_days,
             "upcoming": grouped,
             "birthdays": [
                 {
@@ -307,9 +340,69 @@ class BudionBirthdaysSensor(BudionEntity):
                     "days_until": item.days_until,
                     "age": item.age,
                     "source": item.source,
+                    "image_url": item.avatar_url,
                 }
                 for item in self.coordinator.data.birthdays
             ],
+        }
+
+
+class BudionBirthdayPersonSensor(BudionEntity):
+    """Sensor for one upcoming birthday, with avatar support."""
+
+    _attr_icon = "mdi:cake-variant"
+    _attr_native_unit_of_measurement = "d"
+    _attr_translation_key = "birthday_person"
+
+    def __init__(
+        self,
+        coordinator: BudionDataUpdateCoordinator,
+        entry: ConfigEntry,
+        family_name: str,
+        person_key: str,
+        person_name: str,
+    ) -> None:
+        super().__init__(coordinator, entry, family_name)
+        self._person_key = person_key
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{person_key}"
+        self._attr_translation_placeholders = {"person_name": person_name}
+
+    @property
+    def birthday(self) -> BirthdayEntry | None:
+        """Return the current upcoming birthday payload."""
+        return self.coordinator.birthday_by_key(self._person_key)
+
+    @property
+    def available(self) -> bool:
+        """Only show people currently inside the birthday horizon."""
+        return super().available and self.birthday is not None
+
+    @property
+    def native_value(self) -> int | None:
+        """Return days until the birthday."""
+        birthday = self.birthday
+        return None if birthday is None else birthday.days_until
+
+    @property
+    def entity_picture(self) -> str | None:
+        """Return the person's avatar."""
+        birthday = self.birthday
+        return None if birthday is None else birthday.avatar_url
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return birthday details."""
+        birthday = self.birthday
+        if birthday is None:
+            return {}
+        return {
+            "name": birthday.name,
+            "birth_date": birthday.birth_date.isoformat(),
+            "next_occurrence": birthday.next_occurrence.isoformat(),
+            "days_until": birthday.days_until,
+            "age": birthday.age,
+            "source": birthday.source,
+            "image_url": birthday.avatar_url,
         }
 
 
