@@ -17,6 +17,7 @@ from .birthdays import format_upcoming_summary, group_upcoming_by_date
 from .const import (
     CONF_FAMILY_NAME,
     DOMAIN,
+    MEAL_API_TYPE_SENSORS,
     MEAL_SENSOR_API_TYPES,
     SENSOR_BIRTHDAYS,
     SENSOR_FAMILY,
@@ -26,29 +27,30 @@ from .const import (
     SENSOR_MEAL_SNACK,
     SENSOR_TASKS,
 )
-from .coordinator import BudionCoordinatorData, BudionDataUpdateCoordinator
-from .members import ChildMember, tasks_summary
+from .coordinator import BudionDataUpdateCoordinator
+from .food_icons import MEAL_TYPE_ICONS
+from .members import ChildMember, task_assignee_name, tasks_summary
 
 MEAL_SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
     SENSOR_MEAL_BREAKFAST: SensorEntityDescription(
         key=SENSOR_MEAL_BREAKFAST,
         translation_key="meal_breakfast",
-        icon="mdi:food-croissant",
+        icon=MEAL_TYPE_ICONS[SENSOR_MEAL_BREAKFAST],
     ),
     SENSOR_MEAL_LUNCH: SensorEntityDescription(
         key=SENSOR_MEAL_LUNCH,
         translation_key="meal_lunch",
-        icon="mdi:food",
+        icon=MEAL_TYPE_ICONS[SENSOR_MEAL_LUNCH],
     ),
     SENSOR_MEAL_DINNER: SensorEntityDescription(
         key=SENSOR_MEAL_DINNER,
         translation_key="meal_dinner",
-        icon="mdi:silverware-fork-knife",
+        icon=MEAL_TYPE_ICONS[SENSOR_MEAL_DINNER],
     ),
     SENSOR_MEAL_SNACK: SensorEntityDescription(
         key=SENSOR_MEAL_SNACK,
         translation_key="meal_snack",
-        icon="mdi:cookie",
+        icon=MEAL_TYPE_ICONS[SENSOR_MEAL_SNACK],
     ),
 }
 
@@ -64,26 +66,29 @@ async def async_setup_entry(
     family_name: str = entry.data.get(CONF_FAMILY_NAME, entry.title)
 
     entities: list[SensorEntity] = [
-        BudionMealSensor(
-            coordinator,
-            entry,
-            family_name,
-            sensor_key,
-            MEAL_SENSOR_API_TYPES[sensor_key],
-            description,
-        )
-        for sensor_key, description in MEAL_SENSOR_DESCRIPTIONS.items()
+        BudionTasksSensor(coordinator, entry, family_name),
+        BudionBirthdaysSensor(coordinator, entry, family_name),
+        BudionFamilySensor(coordinator, entry, family_name),
     ]
-    entities.extend(
-        [
-            BudionTasksSensor(coordinator, entry, family_name),
-            BudionBirthdaysSensor(coordinator, entry, family_name),
-            BudionFamilySensor(coordinator, entry, family_name),
-        ]
-    )
 
     family = coordinator.data.family
     if family.get("has_meal_planning"):
+        for meal_type in coordinator.enabled_meal_types():
+            sensor_key = MEAL_API_TYPE_SENSORS.get(meal_type)
+            if sensor_key is None:
+                continue
+            description = MEAL_SENSOR_DESCRIPTIONS[sensor_key]
+            entities.append(
+                BudionMealSensor(
+                    coordinator,
+                    entry,
+                    family_name,
+                    sensor_key,
+                    MEAL_SENSOR_API_TYPES[sensor_key],
+                    description,
+                )
+            )
+
         for shopping_list in coordinator.data.shopping_lists:
             entities.append(
                 BudionShoppingListSensor(
@@ -145,6 +150,7 @@ class BudionMealSensor(BudionEntity):
         self._sensor_key = sensor_key
         self._api_meal_type = api_meal_type
         self.entity_description = description
+        self._fallback_icon = description.icon or MEAL_TYPE_ICONS[sensor_key]
         self._attr_unique_id = f"{entry.entry_id}_{sensor_key}"
 
     @property
@@ -152,6 +158,12 @@ class BudionMealSensor(BudionEntity):
         """Return today's meal title."""
         entry = self.coordinator.meals_for_today(self._api_meal_type)
         return self.coordinator.meal_title(entry)
+
+    @property
+    def icon(self) -> str:
+        """Return the meal icon, preferring today's planned food icon."""
+        entry = self.coordinator.meals_for_today(self._api_meal_type)
+        return self.coordinator.meal_mdi_icon(entry, self._fallback_icon)
 
     @property
     def entity_picture(self) -> str | None:
@@ -167,15 +179,20 @@ class BudionMealSensor(BudionEntity):
             return {
                 "date": dt_util.now().date().isoformat(),
                 "meal_type": self._api_meal_type,
+                "icon": None,
+                "icon_mdi": self._fallback_icon,
                 "image_url": None,
             }
 
         recipe = self.coordinator.recipe_from_entry(entry)
+        icon_id = self.coordinator.meal_icon_id(entry)
         return {
             "date": entry.get("date"),
             "meal_type": entry.get("meal_type"),
             "meal_type_label": entry.get("meal_type_label"),
             "title": entry.get("title"),
+            "icon": icon_id,
+            "icon_mdi": self.coordinator.meal_mdi_icon(entry, self._fallback_icon),
             "recipe_id": entry.get("recipe_id"),
             "recipe_title": recipe.get("title"),
             "image_url": self.coordinator.meal_image_url(entry),
@@ -219,7 +236,7 @@ class BudionTasksSensor(BudionEntity):
             tasks.append(
                 {
                     "title": task.get("title"),
-                    "member": member.get("full_name") or member.get("first_name"),
+                    "member": task_assignee_name(member),
                     "scheduled_for": item.get("scheduled_for"),
                     "is_completed": item.get("is_completed"),
                     "coin_reward": task.get("coin_reward"),
@@ -324,6 +341,7 @@ class BudionFamilySensor(BudionEntity):
         """Return family feature flags."""
         family = self.coordinator.data.family
         subscription = family.get("subscription_plan") or {}
+        meal_settings = family.get("meal_plan_settings") or {}
         return {
             "family_id": family.get("id"),
             "subscription_plan": subscription.get("name"),
@@ -331,6 +349,8 @@ class BudionFamilySensor(BudionEntity):
             "has_shared_tasks": family.get("has_shared_tasks"),
             "has_contacts": family.get("has_contacts"),
             "has_budcoins": family.get("has_budcoins"),
+            "enabled_meal_types": list(self.coordinator.enabled_meal_types()),
+            "default_servings": meal_settings.get("default_servings"),
             "last_updated": self.coordinator.data.fetched_at.isoformat(),
         }
 

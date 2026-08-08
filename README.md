@@ -12,7 +12,7 @@ This integration connects to the Budion API and exposes useful sensors for your 
 
 | Sensor | Description |
 |--------|-------------|
-| **Ontbijt / Lunch / Avondeten / Snack** | What is planned for today |
+| **Ontbijt / Lunch / Avondeten / Snack** | What is planned for today (only enabled meal types; food icons follow Budion) |
 | **Taken vandaag** | Open family tasks (with full task list in attributes) |
 | **Verjaardagen** | Upcoming birthdays from contacts and family members |
 | **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
@@ -67,7 +67,7 @@ entity: sensor.<family>_avondeten
 name: Vanavond eten we
 ```
 
-The sensor exposes `entity_picture` and an `image_url` attribute when the planned meal is linked to a recipe with a photo.
+The sensor exposes `entity_picture` and an `image_url` attribute when the planned meal is linked to a recipe with a photo. Manual meals without a recipe photo use the Budion food icon (`icon` + `icon_mdi` attributes; the entity icon updates too).
 
 For a larger photo with the title:
 
@@ -124,7 +124,7 @@ This integration connects to `https://api.budion.com` (production API for app.bu
 
 ## Roadmap
 
-- [ ] Dynamic discovery of new shopping lists
+- [ ] Dynamic discovery of new shopping lists / meal types without reload
 - [ ] Todo list platform for shopping items
 - [ ] Re-authentication flow when tokens expire
 

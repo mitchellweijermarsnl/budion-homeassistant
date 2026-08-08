@@ -21,6 +21,8 @@ API_PREFIX: Final = "/api/v1"
 DEVICE_NAME: Final = "Home Assistant"
 
 MEAL_TYPES: Final = ("breakfast", "lunch", "dinner", "snack")
+# Matches Family::resolvedMealPlanEnabledTypes() when unset.
+DEFAULT_ENABLED_MEAL_TYPES: Final = ("lunch", "dinner")
 
 SENSOR_MEAL_BREAKFAST: Final = "meal_breakfast"
 SENSOR_MEAL_LUNCH: Final = "meal_lunch"
@@ -35,6 +37,10 @@ MEAL_SENSOR_API_TYPES: Final = {
     SENSOR_MEAL_LUNCH: "lunch",
     SENSOR_MEAL_DINNER: "dinner",
     SENSOR_MEAL_SNACK: "snack",
+}
+
+MEAL_API_TYPE_SENSORS: Final = {
+    api_type: sensor_key for sensor_key, api_type in MEAL_SENSOR_API_TYPES.items()
 }
 
 SENSOR_TYPES: Final = (

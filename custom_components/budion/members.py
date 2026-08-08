@@ -30,13 +30,36 @@ class ChildMember:
 
 def member_name(member: dict[str, Any]) -> str:
     """Return a display name for a family member."""
-    person = member.get("person") or {}
+    person = member.get("person")
+    if isinstance(person, str) and person.strip():
+        return person.strip()
+    if isinstance(person, dict):
+        return (
+            person.get("full_name")
+            or person.get("first_name")
+            or member.get("role_label")
+            or "Kind"
+        )
     return (
-        person.get("full_name")
-        or person.get("first_name")
+        member.get("full_name")
+        or member.get("first_name")
         or member.get("role_label")
         or "Kind"
     )
+
+
+def task_assignee_name(member: dict[str, Any] | None) -> str | None:
+    """Return the assignee name from a today's-task member payload."""
+    if not member:
+        return None
+    person = member.get("person")
+    if isinstance(person, str) and person.strip():
+        return person.strip()
+    if isinstance(person, dict):
+        name = person.get("full_name") or person.get("first_name")
+        if name:
+            return name
+    return member.get("full_name") or member.get("first_name")
 
 
 def is_child_member(member: dict[str, Any]) -> bool:

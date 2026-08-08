@@ -136,7 +136,10 @@ class BudionApiClient:
         recovery: bool = False,
     ) -> str:
         """Complete two-factor login and return an API token."""
-        payload: dict[str, Any] = {"challenge_token": challenge_token}
+        payload: dict[str, Any] = {
+            "challenge_token": challenge_token,
+            "device_name": DEVICE_NAME,
+        }
         if recovery:
             payload["recovery_code"] = code
         else:

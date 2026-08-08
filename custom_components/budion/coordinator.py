@@ -18,7 +18,8 @@ from .birthdays import (
     collect_birthday_people,
     upcoming_birthdays,
 )
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DEFAULT_ENABLED_MEAL_TYPES, DEFAULT_SCAN_INTERVAL, DOMAIN, MEAL_TYPES
+from .food_icons import food_icon_to_mdi
 from .members import ChildMember, build_children
 
 _LOGGER = logging.getLogger(__name__)
@@ -176,6 +177,31 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             return None
         image_url = self.recipe_from_entry(entry).get("image_url")
         return image_url if image_url else None
+
+    def meal_icon_id(self, entry: dict[str, Any] | None) -> str | None:
+        """Return the Budion food-icon id for a meal entry."""
+        if not entry:
+            return None
+        icon = entry.get("icon")
+        return icon if isinstance(icon, str) and icon.strip() else None
+
+    def meal_mdi_icon(self, entry: dict[str, Any] | None, fallback: str) -> str:
+        """Return an mdi icon for a meal entry, falling back when unknown."""
+        return food_icon_to_mdi(self.meal_icon_id(entry)) or fallback
+
+    def enabled_meal_types(self) -> tuple[str, ...]:
+        """Return meal types enabled for the family meal plan."""
+        settings = self.data.family.get("meal_plan_settings") or {}
+        configured = settings.get("enabled_meal_types")
+        if isinstance(configured, list):
+            enabled = tuple(
+                meal_type
+                for meal_type in configured
+                if isinstance(meal_type, str) and meal_type in MEAL_TYPES
+            )
+            if enabled:
+                return enabled
+        return DEFAULT_ENABLED_MEAL_TYPES
 
     def child_by_membership_id(self, membership_id: int) -> ChildMember | None:
         """Return a child member by membership ID."""
