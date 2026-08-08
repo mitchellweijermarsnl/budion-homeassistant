@@ -336,13 +336,26 @@ class BudionBirthdaysCardEditor extends HTMLElement {
   }
 }
 
-customElements.define("budion-birthdays-card", BudionBirthdaysCard);
-customElements.define("budion-birthdays-card-editor", BudionBirthdaysCardEditor);
+if (!customElements.get("budion-birthdays-card")) {
+  customElements.define("budion-birthdays-card", BudionBirthdaysCard);
+}
+if (!customElements.get("budion-birthdays-card-editor")) {
+  customElements.define("budion-birthdays-card-editor", BudionBirthdaysCardEditor);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "budion-birthdays-card",
-  name: "Budion Birthdays",
-  description: "Agenda widget for upcoming Budion birthdays with photos",
-  preview: true,
-});
+if (!window.customCards.some((card) => card.type === "budion-birthdays-card")) {
+  window.customCards.push({
+    type: "budion-birthdays-card",
+    name: "Budion Verjaardagen",
+    description: "Agenda met aankomende verjaardagen en foto's",
+    preview: true,
+    documentationURL: "https://github.com/mitchellweijermarsnl/budion-homeassistant",
+  });
+}
+
+console.info(
+  "%c BUDION %c birthdays-card loaded ",
+  "background:#ff0072;color:#fff;font-weight:700",
+  "background:transparent;color:#ff0072",
+);

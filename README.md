@@ -108,7 +108,7 @@ Optional: `max_items: 8`. The list respects your integration option **Birthday d
 
 Family members also get individual sensors (with photo) for glance cards/automations; contacts only appear in this agenda widget / calendar.
 
-After installing/updating, restart Home Assistant once so the card resource is registered. Then add **Budion Birthdays** from the card picker, or use the YAML above.
+After installing/updating, restart Home Assistant once and hard-refresh the browser/app. Both cards appear in the card picker as **Budion Verjaardagen** and **Budion Boodschappen**.
 
 ### Shopping list / boodschappen
 

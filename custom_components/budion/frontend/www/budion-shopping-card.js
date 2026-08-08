@@ -415,13 +415,26 @@ class BudionShoppingCardEditor extends HTMLElement {
   }
 }
 
-customElements.define("budion-shopping-card", BudionShoppingCard);
-customElements.define("budion-shopping-card-editor", BudionShoppingCardEditor);
+if (!customElements.get("budion-shopping-card")) {
+  customElements.define("budion-shopping-card", BudionShoppingCard);
+}
+if (!customElements.get("budion-shopping-card-editor")) {
+  customElements.define("budion-shopping-card-editor", BudionShoppingCardEditor);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "budion-shopping-card",
-  name: "Budion Boodschappen",
-  description: "Boodschappenlijst-widget met afvinken en toevoegen",
-  preview: true,
-});
+if (!window.customCards.some((card) => card.type === "budion-shopping-card")) {
+  window.customCards.push({
+    type: "budion-shopping-card",
+    name: "Budion Boodschappen",
+    description: "Boodschappenlijst met afvinken en toevoegen",
+    preview: true,
+    documentationURL: "https://github.com/mitchellweijermarsnl/budion-homeassistant",
+  });
+}
+
+console.info(
+  "%c BUDION %c shopping-card loaded ",
+  "background:#03a9f4;color:#fff;font-weight:700",
+  "background:transparent;color:#03a9f4",
+);

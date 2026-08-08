@@ -26,8 +26,23 @@ from .frontend import BudionFrontendRegistration
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR, Platform.TODO]
 
 
+async def async_setup(hass: HomeAssistant, _config: dict) -> bool:
+    """Set up the Budion component and register Lovelace cards early."""
+    hass.data.setdefault(DOMAIN, {})
+    if not hass.data[DOMAIN].get("frontend_registered"):
+        await BudionFrontendRegistration(hass).async_register()
+        hass.data[DOMAIN]["frontend_registered"] = True
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Budion from a config entry."""
+    # Ensure cards are registered even if async_setup was skipped/raced.
+    hass.data.setdefault(DOMAIN, {})
+    if not hass.data[DOMAIN].get("frontend_registered"):
+        await BudionFrontendRegistration(hass).async_register()
+        hass.data[DOMAIN]["frontend_registered"] = True
+
     session = async_get_clientsession(hass)
     client = BudionApiClient(session, DEFAULT_API_URL, entry.data[CONF_TOKEN])
 
@@ -47,17 +62,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})
-    domain_data = hass.data[DOMAIN]
-    domain_data[entry.entry_id] = {
+    hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
         "client": client,
         "family_name": entry.data.get(CONF_FAMILY_NAME, entry.title),
     }
-
-    if not domain_data.get("frontend_registered"):
-        await BudionFrontendRegistration(hass).async_register()
-        domain_data["frontend_registered"] = True
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

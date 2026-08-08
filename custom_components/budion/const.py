@@ -16,12 +16,12 @@ with _MANIFEST_PATH.open(encoding="utf-8") as _manifest_file:
 FRONTEND_URL_BASE: Final = f"/{DOMAIN}-frontend"
 JSMODULES: Final = [
     {
-        "name": "Budion Birthdays Card",
+        "name": "Budion Verjaardagen",
         "filename": "budion-birthdays-card.js",
         "version": INTEGRATION_VERSION,
     },
     {
-        "name": "Budion Shopping Card",
+        "name": "Budion Boodschappen",
         "filename": "budion-shopping-card.js",
         "version": INTEGRATION_VERSION,
     },
