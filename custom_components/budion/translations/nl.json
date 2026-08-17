@@ -77,11 +77,6 @@
       "birthday_person": {
         "name": "{person_name}"
       }
-    },
-    "todo": {
-      "shopping_list": {
-        "name": "Boodschappen · {list_name}"
-      }
     }
   },
   "calendar": {

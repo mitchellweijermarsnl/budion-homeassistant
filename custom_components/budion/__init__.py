@@ -23,7 +23,7 @@ from .const import (
 from .coordinator import BudionDataUpdateCoordinator
 from .frontend import BudionFrontendRegistration
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR, Platform.TODO]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR]
 
 
 async def async_setup(hass: HomeAssistant, _config: dict) -> bool:

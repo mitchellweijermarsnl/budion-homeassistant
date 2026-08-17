@@ -4,7 +4,7 @@
 
 # Budion Home Assistant Integration
 
-Home Assistant custom integration for [Budion](https://budion.app) — your family dashboard for meal planning, shopping lists, tasks, and birthdays.
+Home Assistant custom integration for [Budion](https://budion.app) — your family dashboard for meal planning, tasks, and birthdays.
 
 ## Features
 
@@ -18,7 +18,6 @@ This integration connects to the Budion API and exposes useful sensors for your 
 | **Birthday agenda card** | Built-in Lovelace widget with photos for everyone in the horizon |
 | **Gezinsleden jarig** | Sensors only for family members (with photo + days until) |
 | **Verjaardagen (kalender)** | Full birthday calendar with all names, including multiple on the same day |
-| **Boodschappen** | Interactive shopping lists (`todo.*`) + **Budion Boodschappen** card |
 | **Gezin** | Family name and subscription feature flags |
 | **Per kind** | Budcoin-saldo + open taken (tiener, kind, jong kind) |
 
@@ -113,19 +112,7 @@ The sensor itself still follows the integration option **Birthday days** (defaul
 
 Family members also get individual sensors (with photo) for glance cards/automations; contacts only appear in this agenda widget / calendar.
 
-After installing/updating, restart Home Assistant once and hard-refresh the browser/app. Both cards appear in the card picker as **Budion Verjaardagen** and **Budion Boodschappen**.
-
-### Shopping list / boodschappen
-
-Use the Budion shopping card (recommended — named **Boodschappen**, not “takenlijst”):
-
-```yaml
-type: custom:budion-shopping-card
-entity: todo.<family>_weekboodschappen
-title: Boodschappen
-```
-
-Under the hood these are Home Assistant `todo.*` entities (`Boodschappen · <lijstnaam>`), so check / add / delete syncs to Budion. The built-in `todo-list` card also works if you prefer.
+After installing/updating, restart Home Assistant once and hard-refresh the browser/app. The card appears in the card picker as **Budion Verjaardagen**.
 
 ### Child budcoins and tasks
 
@@ -152,8 +139,7 @@ This integration connects to `https://api.budion.com` (production API for app.bu
 
 ## Roadmap
 
-- [ ] Dynamic discovery of new shopping lists / meal types without reload
-- [x] Todo list platform for shopping items
+- [ ] Dynamic discovery of new meal types without reload
 - [ ] Re-authentication flow when tokens expire
 
 ## License

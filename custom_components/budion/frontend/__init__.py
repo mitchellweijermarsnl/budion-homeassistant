@@ -124,6 +124,20 @@ class BudionFrontendRegistration:
                     "Could not register Lovelace module %s", module["name"]
                 )
 
+        known_urls = {
+            f"{FRONTEND_URL_BASE}/{module['filename']}" for module in JSMODULES
+        }
+        for item in existing:
+            if self._path(item.get("url", "")) in known_urls:
+                continue
+            try:
+                _LOGGER.info("Removing unused Lovelace module %s", item.get("url"))
+                await resources.async_delete_item(item["id"])
+            except Exception:  # noqa: BLE001 - keep frontend load resilient
+                _LOGGER.exception(
+                    "Could not remove Lovelace module %s", item.get("url")
+                )
+
     @staticmethod
     def _versioned_url(module: dict[str, str]) -> str:
         return f"{FRONTEND_URL_BASE}/{module['filename']}?v={module['version']}"

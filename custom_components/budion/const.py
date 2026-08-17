@@ -20,11 +20,6 @@ JSMODULES: Final = [
         "filename": "budion-birthdays-card.js",
         "version": INTEGRATION_VERSION,
     },
-    {
-        "name": "Budion Boodschappen",
-        "filename": "budion-shopping-card.js",
-        "version": INTEGRATION_VERSION,
-    },
 ]
 
 # Production API (backend for app.budion.com).

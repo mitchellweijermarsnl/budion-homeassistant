@@ -37,7 +37,6 @@ class BudionCoordinatorData:
 
     family: dict[str, Any]
     meal_plan: list[dict[str, Any]] = field(default_factory=list)
-    shopping_lists: list[dict[str, Any]] = field(default_factory=list)
     tasks: list[dict[str, Any]] = field(default_factory=list)
     birthday_people: list[BirthdayPerson] = field(default_factory=list)
     birthdays: list[BirthdayEntry] = field(default_factory=list)
@@ -78,7 +77,6 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             raise UpdateFailed(str(err)) from err
 
         meal_plan: list[dict[str, Any]] = []
-        shopping_lists: list[dict[str, Any]] = []
         tasks: list[dict[str, Any]] = []
         wallets: list[dict[str, Any]] = []
         birthday_people: list[BirthdayPerson] = []
@@ -99,11 +97,6 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
                     meal_plan = raw_entries
             except BudionApiError as err:
                 _LOGGER.warning("Meal plan unavailable: %s", err)
-
-            try:
-                shopping_lists = await self.client.get_shopping_lists(self.family_id)
-            except BudionApiError as err:
-                _LOGGER.debug("Shopping lists unavailable: %s", err)
 
         if family.get("has_shared_tasks"):
             try:
@@ -146,7 +139,6 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
         return BudionCoordinatorData(
             family=family,
             meal_plan=meal_plan,
-            shopping_lists=shopping_lists,
             tasks=tasks,
             birthday_people=birthday_people,
             birthdays=birthdays,
@@ -229,35 +221,3 @@ class BudionDataUpdateCoordinator(DataUpdateCoordinator[BudionCoordinatorData]):
             if entry.key == key:
                 return entry
         return None
-
-    def shopping_list_by_id(self, list_id: int) -> dict[str, Any] | None:
-        """Return a shopping list by ID."""
-        for shopping_list in self.data.shopping_lists:
-            if shopping_list.get("id") == list_id:
-                return shopping_list
-        return None
-
-    @staticmethod
-    def shopping_list_items(
-        shopping_list: dict[str, Any] | None,
-        *,
-        checked: bool | None = None,
-    ) -> list[dict[str, Any]]:
-        """Return shopping list items, optionally filtered by checked state."""
-        if not shopping_list:
-            return []
-
-        def _as_list(value: Any) -> list[dict[str, Any]]:
-            if isinstance(value, dict):
-                value = value.get("data", [])
-            if not isinstance(value, list):
-                return []
-            return [item for item in value if isinstance(item, dict)]
-
-        if checked is True:
-            return _as_list(shopping_list.get("checked_items"))
-        if checked is False:
-            return _as_list(shopping_list.get("open_items"))
-        return _as_list(shopping_list.get("open_items")) + _as_list(
-            shopping_list.get("checked_items")
-        )
