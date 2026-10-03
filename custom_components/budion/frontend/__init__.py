@@ -9,7 +9,6 @@ from typing import Any
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_call_later
 
 from ..const import FRONTEND_URL_BASE, JSMODULES
 
@@ -27,27 +26,34 @@ class BudionFrontendRegistration:
         """Register static paths and ensure cards are loaded by the frontend."""
         await self._async_register_path()
 
-        # Always register as frontend modules so cards load on every page,
-        # including the card picker. This avoids cold-start races.
-        for module in JSMODULES:
-            add_extra_js_url(self.hass, self._versioned_url(module))
-
         lovelace = self.hass.data.get("lovelace")
-        if lovelace is None:
-            _LOGGER.warning(
-                "Lovelace not ready yet; Budion cards are loaded via frontend modules"
-            )
+        # HA 2026.8 dropped LovelaceData.mode. resource_mode is what decides
+        # whether dashboard resources live in storage. Checking only `.mode`
+        # skipped resource registration and left the card on extra JS, which
+        # evaluates before the scoped custom-element registry is installed.
+        mode = getattr(lovelace, "resource_mode", None) or getattr(
+            lovelace, "mode", None
+        )
+        resources = getattr(lovelace, "resources", None)
+
+        if mode == "storage" and resources is not None:
+            try:
+                await self._async_register_lovelace_modules(resources)
+            except Exception:  # noqa: BLE001 - keep the card loadable
+                _LOGGER.exception(
+                    "Could not register Budion as a Lovelace resource; "
+                    "falling back to frontend extra JS"
+                )
+                for module in JSMODULES:
+                    add_extra_js_url(self.hass, self._versioned_url(module))
             return
 
-        mode = getattr(lovelace, "mode", None)
-        if mode == "storage":
-            await self._async_wait_for_lovelace_resources(lovelace)
-        else:
-            _LOGGER.debug(
-                "Lovelace mode is %s; cards are available via frontend modules at %s",
-                mode,
-                FRONTEND_URL_BASE,
-            )
+        _LOGGER.debug(
+            "Lovelace resource mode is %s; loading Budion cards via frontend extra JS",
+            mode,
+        )
+        for module in JSMODULES:
+            add_extra_js_url(self.hass, self._versioned_url(module))
 
     async def _async_register_path(self) -> None:
         """Serve the www directory with the card JavaScript files."""
@@ -63,22 +69,11 @@ class BudionFrontendRegistration:
         except RuntimeError:
             _LOGGER.debug("Budion frontend path already registered")
 
-    async def _async_wait_for_lovelace_resources(self, lovelace: Any) -> None:
-        """Wait until Lovelace resources are ready, then mirror modules there."""
-
-        async def _check_loaded(_now: Any = None) -> None:
-            resources = getattr(lovelace, "resources", None)
-            if resources is not None and getattr(resources, "loaded", False):
-                await self._async_register_lovelace_modules(resources)
-                return
-            async_call_later(self.hass, 5, _check_loaded)
-
-        await _check_loaded()
-
     async def _async_register_lovelace_modules(self, resources: Any) -> None:
         """Install or update Lovelace module resources (storage mode)."""
+        await self._async_ensure_resources_loaded(resources)
         try:
-            existing_items = list(resources.async_items())
+            existing_items = list(resources.async_items() or [])
         except Exception:  # noqa: BLE001 - keep frontend load resilient
             _LOGGER.exception("Could not read Lovelace resources")
             return
@@ -137,6 +132,21 @@ class BudionFrontendRegistration:
                 _LOGGER.exception(
                     "Could not remove Lovelace module %s", item.get("url")
                 )
+
+    @staticmethod
+    async def _async_ensure_resources_loaded(resources: Any) -> None:
+        """Load the resource collection before reading it.
+
+        async_items() does not load from disk. Creating a resource against an
+        empty in-memory collection overwrites stored dashboard resources.
+        """
+        if getattr(resources, "loaded", False):
+            return
+        loader = getattr(resources, "async_load", None)
+        if loader is None:
+            return
+        await loader()
+        resources.loaded = True
 
     @staticmethod
     def _versioned_url(module: dict[str, str]) -> str:

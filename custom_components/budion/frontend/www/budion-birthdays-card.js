@@ -358,12 +358,41 @@ class BudionBirthdaysCardEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get("budion-birthdays-card")) {
-  customElements.define("budion-birthdays-card", BudionBirthdaysCard);
+// HA 2026.8 replaces window.customElements while the page boots. A module that
+// runs before that swap registers on the native registry, which the new
+// registry does not see, so Lovelace reports "Custom element doesn't exist".
+// Defining again after <home-assistant> exists lands the tag on the registry
+// the dashboard actually queries.
+const HEAL_DELAY_MS = 5000;
+
+function defineBudionElement(name, ctor) {
+  const registryAtLoad = customElements;
+  if (!registryAtLoad.get(name)) {
+    registryAtLoad.define(name, ctor);
+  }
+
+  const heal = (via) => {
+    if (customElements.get(name)) {
+      return;
+    }
+    try {
+      customElements.define(name, ctor);
+      console.info(
+        `Budion: re-registered <${name}> after the custom element registry was replaced (${via})`,
+      );
+    } catch (err) {
+      console.warn(`Budion: could not re-register <${name}> (${via})`, err);
+    }
+  };
+
+  registryAtLoad.whenDefined("home-assistant").then(() => {
+    heal("home-assistant");
+  });
+  setTimeout(() => heal("fallback"), HEAL_DELAY_MS);
 }
-if (!customElements.get("budion-birthdays-card-editor")) {
-  customElements.define("budion-birthdays-card-editor", BudionBirthdaysCardEditor);
-}
+
+defineBudionElement("budion-birthdays-card", BudionBirthdaysCard);
+defineBudionElement("budion-birthdays-card-editor", BudionBirthdaysCardEditor);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === "budion-birthdays-card")) {
