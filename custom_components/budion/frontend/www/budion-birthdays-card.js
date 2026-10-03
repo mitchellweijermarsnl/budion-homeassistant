@@ -273,6 +273,13 @@ class BudionBirthdaysCard extends HTMLElement {
       body += `</div>`;
     }
 
+    // hass updates arrive on every state change in Home Assistant. Replacing
+    // innerHTML each time destroys the <img> nodes, so avatars flash their
+    // pink background until the photo loads again.
+    if (this._body === body) {
+      return;
+    }
+    this._body = body;
     this._card.innerHTML = body;
   }
 
